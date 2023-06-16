@@ -7,12 +7,20 @@ function event_handler() {
     Credit to SamSpadeDev from the GameMaker Forums for inspiring the implementation
     
     USAGE : call - > instance_create_depth( 0, 0, 0, obj_eventhandler ); to instance the event handler somewhere at the very beginning of the game.
+	
+	Events can be called on both instances AND structs, provided you input the correct id/reference
 */
+
+/// @desc Event Handler Constructor
 function cEventHandler() constructor {
     event_struct = {};
-    
-    // ID, Event ID and callback to run when an event is recieved
-    static Subscribe = function( _id, _event_id, _func ) {
+
+	/// @func						Subscribe( _id, _event_id, _callback )
+	/// @desc						Will subscribe an instance or struct to a specified event and store its ID and callback.
+	/// @arg {Struct OR {Id} _id	The instance ID or struct that will be subscribed to this event.
+	/// @arg {String} _event_id		Event name that will be referenced when it is published, recommended naming scheme is "ev_whatever"	
+	/// @arg {Function} _callback	The callback that will be run on the instance / struct once the event is published.
+    static Subscribe = function( _id, _event_id, _callback ) {
         if ( is_undefined( event_struct[$ _event_id] ) ) {
             event_struct[$ _event_id] = [];
         }
@@ -21,11 +29,14 @@ function cEventHandler() constructor {
         }
         
         // Pushing the event to the event struct, along with an array containing the events ID and Function
-        array_push( event_struct[$ _event_id], [_id, _func] );
+        array_push( event_struct[$ _event_id], [_id, _callback] );
     }
     
-    // Function for firing an event
-    static Publish = function( _event_id, _data ) {
+	/// @func						Publish( _event_id, _callback )
+	/// @desc						Will publish an event and run all the callbacks associated with the event specified.
+	/// @arg {String} _event_id		Event name that will be referenced when it is published, recommended naming scheme is "ev_whatever"	
+	/// @arg {Function} _callback	Callback that is run once an event is published, no callback HAS to be specified.
+    static Publish = function( _event_id, _callback ) {
         var _sub_array = event_struct[$ _event_id];
         
         // If the event struct / array doesn't exist then return false and don't publish anything.
@@ -34,7 +45,7 @@ function cEventHandler() constructor {
 	            // Looping through the sub list and running the function on each sub
 	            if ( instance_exists( _sub_array[i][0] ) ) {
 	                print( $"Published : {i}" );
-	                _sub_array[i][1]( _data );
+	                _sub_array[i][1]( _callback );
 	            }
 	            else {
 	                // Delete the function from the sub
@@ -47,6 +58,8 @@ function cEventHandler() constructor {
         }
     }
     
+	/// @func	Unsubscribe( _event_id, _event )
+	/// @desc	Will unsubscribe an instance from an event
     static Unsubscribe = function( _event_id, _event ) {
         if ( !is_undefined( event_struct[$ _event_id] ) ) {
             var _pos = IsSubscribed( _event_id, _event );
@@ -60,6 +73,8 @@ function cEventHandler() constructor {
         }
     }  
     
+	/// @func	Unsubscribe( _id )
+	/// @desc	Will unsubscribe an instance from all events
     static UnsubscribeAll = function( _id ) {
 		var _keys_arr = variable_struct_get_names( event_struct );
 		
@@ -81,18 +96,17 @@ function cEventHandler() constructor {
 }
 
 function test_eventhandler( _id ) {
-    print( "Running Test..." );
+    show_debug_message( "Running Test..." );
 
     eventhandler_subscribe( _id, "TestEvent", function() {
-        print( "Subscribed event!" );
+        show_debug_message( "Subscribed event!" );
     } );
     
     eventhandler_publish( "TestEvent", function() {
-        print( "This is an event." );
-        playsound( snd_break_glass );
+        show_debug_message( "This is an event." );
     } );
     
-    print( eventhandler.event_struct );
+    show_debug_message( eventhandler.event_struct );
 }
 
 function eventhandler_subscribe( _id, _event_id, _func ) {
@@ -105,7 +119,7 @@ function eventhandler_subscribe( _id, _event_id, _func ) {
 
 function eventhandler_publish( _event_id, _data = -1 ) {
 	with( obj_eventhandler ) {
-		print( "Attempting Publish ..." );
+		show_debug_message( "Attempting Publish ..." );
         eventhandler.Publish( _event_id, _data );
         return true;
 	}
@@ -113,7 +127,7 @@ function eventhandler_publish( _event_id, _data = -1 ) {
 
 function eventhandler_unsubscribe( _id, _event_id ) {
 	with( obj_eventhandler ) {
-		print( "Attempting Unsubscribe ..." );
+		show_debug_message( "Attempting Unsubscribe ..." );
 		eventhandler.Unsubscribe( _id, _event_id );
 		return true;
 	}
@@ -121,7 +135,7 @@ function eventhandler_unsubscribe( _id, _event_id ) {
 
 function eventhandler_unsubscribe_all( _id ) {
 	with( obj_eventhandler ) {
-		print( "Attempting Unsubscribe All ..." );
+		show_debug_message( "Attempting Unsubscribe All ..." );
 		eventhandler.UnsubscribeAll( _id );
 		return true;
 	}
